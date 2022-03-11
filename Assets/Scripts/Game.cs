@@ -14,9 +14,7 @@ public class Game : MonoBehaviour
     public Text textGameOver;
     public Text textWin;
     public Text textFlag;
-    public Button btnEasy;
-    public Button btnNormal;
-    public Button btnHard;
+    public GameObject buttonLevel;
     private int flagCount;
     private DifficultConfig diffConfig;
     private void OnValidate()
@@ -29,19 +27,16 @@ public class Game : MonoBehaviour
     }
     public void Start()
     {
-        btnEasy.gameObject.SetActive(true);
-        btnNormal.gameObject.SetActive(true);
-        btnHard.gameObject.SetActive(true);
+        buttonLevel.SetActive(true);
     }
     public void RestartGame()
     {
         NewGame();
         textGameOver.gameObject.SetActive(false);
-       // btnRestart.gameObject.SetActive(false);
+
         gameOver = false;
-        btnEasy.gameObject.SetActive(false);
-        btnNormal.gameObject.SetActive(false);
-        btnHard.gameObject.SetActive(false);
+
+        buttonLevel.SetActive(false);
     }
     private void NewGame()
     {
@@ -52,9 +47,7 @@ public class Game : MonoBehaviour
         GenerateNumber();
         Camera.main.transform.position = new Vector3(width / 2f, height / 2f, -10f);
         board.Draw(state);
-        //btnEasy.gameObject.SetActive(false);
-        //btnNormal.gameObject.SetActive(false);
-        //btnHard.gameObject.SetActive(false);
+
         textFlag.gameObject.SetActive(true);
     }
     public void SetUpDifficult(int diff)
@@ -145,7 +138,7 @@ public class Game : MonoBehaviour
         textFlag.text = "Flag: " + flagCount;
         if (!gameOver)
         {
-            if (Input.GetMouseButtonDown(1) && flagCount > 0)
+            if (Input.GetMouseButtonDown(1))
             {
                 Flag();
             }
@@ -154,9 +147,15 @@ public class Game : MonoBehaviour
                 Reveal();
             }
         }
+        else if (CheckWinCondition())
+        {
+
+            buttonLevel.SetActive(true);
+        }
     }
     private void Flag()
     {
+
         Vector3 wordPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         Vector3Int cellPosition = board.tilemap.WorldToCell(wordPosition);
         Cell cell = GetCell(cellPosition.x, cellPosition.y);
@@ -173,10 +172,24 @@ public class Game : MonoBehaviour
         // {
         //     flagCount++;
         // }
-        flagCount = cell.flagged == true ? flagCount - 1 : flagCount + 1;
-        state[cellPosition.x, cellPosition.y] = cell;
 
-        board.Draw(state);
+        if (flagCount > 0)
+        {
+            flagCount = cell.flagged == true ? flagCount - 1 : flagCount + 1;
+            state[cellPosition.x, cellPosition.y] = cell;
+            board.Draw(state);
+        }
+        else if (flagCount == 0)
+        {
+            if (!cell.flagged)
+            {
+                // cell.flagged = true;
+                flagCount++;
+                state[cellPosition.x, cellPosition.y] = cell;
+                board.Draw(state);
+            }
+        }
+
     }
     private void Reveal()
     {
@@ -225,10 +238,9 @@ public class Game : MonoBehaviour
     {
         gameOver = true;
         textGameOver.gameObject.SetActive(true);
-        btnEasy.gameObject.SetActive(true);
-        btnNormal.gameObject.SetActive(true);
-        btnHard.gameObject.SetActive(true);
-        //btnRestart.gameObject.SetActive(true);
+
+        buttonLevel.SetActive(true);
+
         textFlag.gameObject.SetActive(false);
         cell.revealed = true;
         cell.exploded = true;
@@ -246,7 +258,7 @@ public class Game : MonoBehaviour
             }
         }
     }
-    private void CheckWinCondition()
+    private bool CheckWinCondition()
     {
         for (int i = 0; i < width; i++)
         {
@@ -255,7 +267,7 @@ public class Game : MonoBehaviour
                 Cell cell = state[i, j];
                 if (cell.type != Cell.Type.Mine && !cell.revealed)
                 {
-                    return;
+                    return false;
                 }
             }
         }
@@ -274,6 +286,7 @@ public class Game : MonoBehaviour
                 }
             }
         }
+        return true;
     }
     private Cell GetCell(int x, int y)
     {
